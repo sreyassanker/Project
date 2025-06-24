@@ -1,0 +1,113 @@
+!pip install librosa soundfile resampy scikit-learn tqdm
+
+
+from google.colab import drive
+drive.mount('emotion_detection.zip')
+
+
+# %%
+!pip install librosa soundfile resampy scikit-learn tqdm
+
+# %%
+from google.colab import drive
+
+# Mount your Google Drive. This will prompt you to authorize.
+drive.mount('/content/drive')
+
+# %%
+import zipfile
+import os
+
+# Correct zip_path to point to the location of the zip file in your mounted Google Drive
+# Replace 'Your_Folder' with the actual folder name in your Google Drive
+# If the file is in the root of your drive, the path would be '/content/drive/MyDrive/emotion_detection.zip'
+zip_path = '/content/drive/MyDrive/emotion_detection.zip'
+
+# Define the extraction path
+extract_path = "/content/emotion_detection"
+
+# Create the extraction directory if it doesn't exist
+os.makedirs(extract_path, exist_ok=True)
+
+try:
+    # Open the zip file using the correct path
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(extract_path)
+
+    print("✅ Extraction complete")
+except FileNotFoundError:
+    print(f"❌ Error: The file {zip_path} was not found.")
+    print("Please ensure the path is correct and the file exists in your Google Drive.")
+except Exception as e:
+    print(f"❌ An error occurred during extraction: {e}")
+
+
+emotion_map = {
+    "ANG": "angry",
+    "DIS": "disgust",
+    "FEA": "fear",
+    "HAP": "happy",
+    "NEU": "neutral",
+    "SAD": "sad"
+}
+
+
+import librosa
+import numpy as np
+
+def extract_features(file_path):
+    X, sr = librosa.load(file_path, res_type='kaiser_fast', duration=3)
+    mfcc = np.mean(librosa.feature.mfcc(y=X, sr=sr, n_mfcc=40).T, axis=0)
+    chroma = np.mean(librosa.feature.chroma_stft(y=X, sr=sr).T, axis=0)
+    mel = np.mean(librosa.feature.melspectrogram(y=X, sr=sr).T, axis=0)
+    return np.hstack([mfcc, chroma, mel])
+
+
+from tqdm import tqdm
+
+X, y = [], []
+
+for root, _, files in os.walk(extract_path):
+    for file in tqdm(files):
+        if file.endswith(".wav"):
+            try:
+                file_path = os.path.join(root, file)
+                emotion_code = file.split("_")[2]
+                emotion = emotion_map.get(emotion_code)
+                if emotion:
+                    features = extract_features(file_path)
+                    X.append(features)
+                    y.append(emotion)
+            except Exception as e:
+                print(f"Error with file {file}: {e}")
+
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report
+
+X = np.array(X)
+y = np.array(y)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+print("✅ Accuracy:", accuracy_score(y_test, y_pred))
+print("📄 Classification Report:\n", classification_report(y_test, y_pred))
+
+
+import pickle
+
+with open("emotion_model.pkl", "wb") as f:
+    pickle.dump(model, f)
+
+print("✅ Model saved as emotion_model.pkl")
+
+
+from google.colab import files
+files.download("emotion_model.pkl")
+
+
