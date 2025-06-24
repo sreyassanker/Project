@@ -2,24 +2,18 @@
 📦 Step 1: Install Required Libraries
 These libraries are used for audio processing (librosa, soundfile, resampy), machine learning (scikit-learn), and progress tracking (tqdm).
 
-python
-Copy
-Edit
+
 !pip install librosa soundfile resampy scikit-learn tqdm
 💽 Step 2: Mount Google Drive
 We mount Google Drive to access the emotion_detection.zip file stored there.
 
-python
-Copy
-Edit
+
 from google.colab import drive
 drive.mount('/content/drive')
 📂 Step 3: Extract the Zip File
 We extract the dataset emotion_detection.zip into a folder called /content/emotion_detection.
 
-python
-Copy
-Edit
+
 import zipfile
 import os
 
@@ -39,9 +33,6 @@ except Exception as e:
 🔤 Step 4: Emotion Mapping
 CREMA-D files use short codes for emotions. This dictionary helps map them to full emotion labels.
 
-python
-Copy
-Edit
 emotion_map = {
     "ANG": "angry",
     "DIS": "disgust",
@@ -59,9 +50,6 @@ Chroma for pitch-based tone
 
 Mel spectrogram for power across frequencies
 
-python
-Copy
-Edit
 import librosa
 import numpy as np
 
@@ -74,9 +62,6 @@ def extract_features(file_path):
 🔄 Step 6: Load and Process the Dataset
 We go through all .wav files in the dataset, extract features, and assign their correct emotion label.
 
-python
-Copy
-Edit
 from tqdm import tqdm
 
 X, y = [], []
@@ -97,9 +82,7 @@ for root, _, files in os.walk(extract_path):
 🧪 Step 7: Train the Model
 Split the data into training and testing, train a Random Forest classifier, and print the performance.
 
-python
-Copy
-Edit
+
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
@@ -118,9 +101,7 @@ print("📄 Classification Report:\n", classification_report(y_test, y_pred))
 💾 Step 8: Save the Model
 Save the trained model to a .pkl file, so it can be reused in the Streamlit app.
 
-python
-Copy
-Edit
+
 import pickle
 
 with open("emotion_model.pkl", "wb") as f:
@@ -130,8 +111,6 @@ print("✅ Model saved as emotion_model.pkl")
 📥 Step 9: Download the Model Locally
 This allows you to download emotion_model.pkl to your local machine for later use.
 
-python
-Copy
-Edit
+
 from google.colab import files
 files.download("emotion_model.pkl")
